@@ -2,9 +2,10 @@
   "name": "thread-bot",
   "version": "0.0.0",
   "description": "A simple Discord.js bot for making threads more discoverable",
-  "main": "index.ts",
+  "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.ts"
+    "start": "ts-node src/index.ts",
+    "dev": "nodemon"
   },
   "repository": "git@github.com:evestroud/thread-bot.git",
   "author": "Eve Stroud <evestroud89@gmail.com>",
