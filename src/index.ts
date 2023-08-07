@@ -45,6 +45,11 @@ for (const file of commandFiles) {
 
 client.once(Events.ClientReady, (c) => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
+  c.channels.cache
+    .filter((channel) => channel.isThread())
+    .forEach((thread) => threads.set(thread.id, thread as ThreadChannel));
+  console.log("Threads loaded");
+  process.stdout.write("\x07"); // system bell (lets me know when hot reload is finished)
 });
 
 client.on(Events.ThreadCreate, async (thread) => {
