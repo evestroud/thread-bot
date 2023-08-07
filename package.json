@@ -1,6 +1,6 @@
 {
   "name": "thread-bot",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "A simple Discord.js bot for making threads more discoverable",
   "main": "index.js",
   "scripts": {
