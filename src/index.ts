@@ -2,7 +2,6 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   Client,
-  ClientOptions,
   Collection,
   Events,
   GatewayIntentBits,
@@ -19,18 +18,13 @@ interface Command {
   data: SlashCommandBuilder;
   execute: (interaction: Interaction) => Promise<void>;
 }
-class ClientCommands extends Client {
-  commands: Collection<string, Command>;
-  threads: Collection<string, ThreadChannel>;
-  constructor(options: ClientOptions) {
-    super(options);
-    this.commands = new Collection();
-    this.threads = new Collection();
-  }
-}
-const client = new ClientCommands({
+
+const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
+const commands = new Collection<string, Command>();
+const threads = new Collection<string, ThreadChannel>();
+
 const commandsPath = path.join(__dirname, "commands");
 const commandFiles = fs
   .readdirSync(commandsPath)
@@ -41,7 +35,7 @@ for (const file of commandFiles) {
   const command = require(filePath);
   // Set a new item in the Collection with the key as the command name and the value as the exported module
   if ("data" in command && "execute" in command) {
-    client.commands.set(command.data.name, command);
+    commands.set(command.data.name, command);
   } else {
     console.log(
       `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
@@ -55,25 +49,21 @@ client.once(Events.ClientReady, (c) => {
 
 client.on(Events.ThreadCreate, async (thread) => {
   console.log("Thread created");
-
-  const { id } = thread;
-  client.threads.set(id, thread);
+  threads.set(thread.id, thread);
 });
 
 client.on(Events.MessageCreate, async (message) => {
   const { channelId } = message;
   const channel = await client.channels.fetch(channelId);
   if (channel?.isThread()) {
-    if (!client.threads.get(channelId)) client.threads.set(channelId, channel);
+    if (!threads.get(channelId)) threads.set(channelId, channel);
   }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  const command = (interaction.client as ClientCommands).commands?.get(
-    interaction.commandName
-  );
+  const command = commands.get(interaction.commandName);
 
   if (!command) {
     console.error(`No command matching ${interaction.commandName} was found.`);
@@ -99,3 +89,5 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.login(DISCORD_TOKEN);
+
+export { threads };
