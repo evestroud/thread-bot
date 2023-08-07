@@ -2,11 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   Client,
+  ClientOptions,
   Collection,
   Events,
   GatewayIntentBits,
   Interaction,
   SlashCommandBuilder,
+  ThreadChannel,
 } from "discord.js";
 import { configDotenv } from "dotenv";
 
@@ -17,12 +19,18 @@ interface Command {
   data: SlashCommandBuilder;
   execute: (interaction: Interaction) => Promise<void>;
 }
-type ClientCommands = Client & { commands?: Collection<string, Command> };
-const client: ClientCommands = new Client({
+class ClientCommands extends Client {
+  commands: Collection<string, Command>;
+  threads: Collection<string, ThreadChannel>;
+  constructor(options: ClientOptions) {
+    super(options);
+    this.commands = new Collection();
+    this.threads = new Collection();
+  }
+}
+const client = new ClientCommands({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
-client.commands = new Collection();
-
 const commandsPath = path.join(__dirname, "commands");
 const commandFiles = fs
   .readdirSync(commandsPath)
@@ -41,8 +49,6 @@ for (const file of commandFiles) {
   }
 }
 
-const allThreads = new Map();
-
 client.once(Events.ClientReady, (c) => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
 });
@@ -51,16 +57,14 @@ client.on(Events.ThreadCreate, async (thread) => {
   console.log("Thread created");
 
   const { id } = thread;
-  allThreads.set(id, thread.createdTimestamp);
+  client.threads.set(id, thread);
 });
 
 client.on(Events.MessageCreate, async (message) => {
-  const { channelId, createdTimestamp } = message;
+  const { channelId } = message;
   const channel = await client.channels.fetch(channelId);
   if (channel?.isThread()) {
-    if (!allThreads.get(channelId)) allThreads.set(channelId, createdTimestamp);
-    console.log(createdTimestamp, "in thread: ", channelId);
-    console.log(allThreads);
+    if (!client.threads.get(channelId)) client.threads.set(channelId, channel);
   }
 });
 
