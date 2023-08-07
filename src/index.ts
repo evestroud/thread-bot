@@ -1,12 +1,23 @@
 import fs from "node:fs";
 import path from "node:path";
-import { Client, Collection, Events, GatewayIntentBits } from "discord.js";
+import {
+  Client,
+  Collection,
+  Events,
+  GatewayIntentBits,
+  Interaction,
+  SlashCommandBuilder,
+} from "discord.js";
 import { configDotenv } from "dotenv";
 
 configDotenv();
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-type ClientCommands = Client & { commands?: Collection<any, any> };
+interface Command {
+  data: SlashCommandBuilder;
+  execute: (interaction: Interaction) => Promise<void>;
+}
+type ClientCommands = Client & { commands?: Collection<string, Command> };
 const client: ClientCommands = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
