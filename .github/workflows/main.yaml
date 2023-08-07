@@ -1,0 +1,31 @@
+name: Deploy to VPS
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deployment:
+    environment: VPS
+    runs-on: ubuntu-latest
+    steps:
+      - name: clone on VPS and restart bot
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT }}
+          script: |
+            export NVM_DIR=~/.nvm
+            source ~/.nvm/nvm.sh
+            cd /home/eve/thread-bot
+            git fetch origin develop
+            git reset --hard origin/develop
+            git checkout develop
+            yarn
+            yarn build
+            cat pid | xargs kill
+            node dist/index.js &> log & echo $! > pid
+            exit
