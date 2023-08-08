@@ -1,13 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import {
-  Client,
-  Collection,
-  Events,
-  GatewayIntentBits,
-  REST,
-  Routes,
-} from "discord.js";
+import { REST, Routes } from "discord.js";
 import { configDotenv } from "dotenv";
 
 configDotenv();
@@ -16,16 +9,11 @@ const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
 
 const commands = [];
-// Grab all the command files from the commands directory you created earlier
-// const foldersPath = path.join(__dirname, "commands");
-// const commandFolders = fs.readdirSync(foldersPath);
-
-// for (const folder of commandFolders) {
-// Grab all the command files from the commands directory you created earlier
 const commandsPath = path.join(__dirname, "commands");
 const commandFiles = fs
   .readdirSync(commandsPath)
   .filter((file) => file.endsWith(".js"));
+
 // Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);
@@ -37,7 +25,6 @@ for (const file of commandFiles) {
       `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
     );
   }
-  // }
 }
 
 // Construct and prepare an instance of the REST module
