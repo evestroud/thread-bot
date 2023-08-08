@@ -27,5 +27,5 @@ jobs:
             yarn
             yarn build
             cat pid | xargs kill
-            node dist/index.js &> log & echo $! > pid
+            node dist/deploy-commands.js &> log & echo $! > pid
             exit
