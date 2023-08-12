@@ -24,9 +24,10 @@ const client = new Client({
 const commands = new Collection<string, Command>();
 
 const commandsPath = path.join(__dirname, "commands");
+const commandsExtension = __filename.slice(-3);
 const commandFiles = fs
   .readdirSync(commandsPath)
-  .filter((file) => file.endsWith(".js"));
+  .filter((file) => file.endsWith(commandsExtension));
 
 for (const file of commandFiles) {
   const filePath = path.join(commandsPath, file);

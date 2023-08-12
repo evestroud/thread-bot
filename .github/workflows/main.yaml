@@ -25,7 +25,7 @@ jobs:
             git reset --hard origin/develop
             git checkout develop
             yarn
-            yarn build
+            yarn deploy
             cat pid | xargs kill
-            node dist/deploy-commands.js &> log & echo $! > pid
+            node dist/index.js &> log & echo $! > pid
             exit
