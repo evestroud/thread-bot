@@ -7,7 +7,6 @@ import {
   GatewayIntentBits,
   Interaction,
   SlashCommandBuilder,
-  ThreadChannel,
 } from "discord.js";
 import { configDotenv } from "dotenv";
 
@@ -23,8 +22,6 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
 });
 const commands = new Collection<string, Command>();
-const threads = new Collection<string, ThreadChannel>();
-
 const commandsPath = path.join(__dirname, "commands");
 const commandFiles = fs
   .readdirSync(commandsPath)
@@ -38,31 +35,14 @@ for (const file of commandFiles) {
     commands.set(command.data.name, command);
   } else {
     console.log(
-      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
+      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
     );
   }
 }
 
 client.once(Events.ClientReady, (c) => {
   console.log(`Ready! Logged in as ${c.user.tag}`);
-  c.channels.cache
-    .filter((channel) => channel.isThread())
-    .forEach((thread) => threads.set(thread.id, thread as ThreadChannel));
-  console.log("Threads loaded");
   process.stdout.write("\x07"); // system bell (lets me know when hot reload is finished)
-});
-
-client.on(Events.ThreadCreate, async (thread) => {
-  console.log("Thread created");
-  threads.set(thread.id, thread);
-});
-
-client.on(Events.MessageCreate, async (message) => {
-  const { channelId } = message;
-  const channel = await client.channels.fetch(channelId);
-  if (channel?.isThread()) {
-    if (!threads.get(channelId)) threads.set(channelId, channel);
-  }
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -94,5 +74,3 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.login(DISCORD_TOKEN);
-
-export { threads };
