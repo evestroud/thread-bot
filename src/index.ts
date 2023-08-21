@@ -1,12 +1,18 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  CategoryChannel,
+  CategoryChildChannel,
+  ChannelType,
   Client,
   Collection,
   Events,
   GatewayIntentBits,
   Interaction,
+  Message,
   SlashCommandBuilder,
+  TextChannel,
+  ThreadChannel,
 } from "discord.js";
 import { configDotenv } from "dotenv";
 
@@ -19,7 +25,11 @@ interface Command {
 }
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildIntegrations,
+  ],
 });
 const commands = new Collection<string, Command>();
 
@@ -37,13 +47,50 @@ for (const file of commandFiles) {
     commands.set(command.data.name, command);
   } else {
     console.log(
-      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
+      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
     );
   }
 }
 
-client.once(Events.ClientReady, (c) => {
-  console.log(`Ready! Logged in as ${c.user.tag}`);
+client.once(Events.ClientReady, async (c) => {
+  const channels = c.channels.cache.values();
+  const categories = Array.from(channels).filter(
+    (c) => c.type === ChannelType.GuildCategory,
+  ) as CategoryChannel[];
+  categories.forEach(async (c) => {
+    if (c.name == "Voice Channels") return;
+    let threadListChannel;
+    threadListChannel = c.children.cache.find(
+      (c) => c.name === "thread-list",
+    ) as TextChannel;
+    if (!threadListChannel) {
+      threadListChannel = (await c.children.create({
+        name: "thread-list",
+      })) as TextChannel;
+    }
+    const messages = await threadListChannel.messages.fetch();
+    let threadList: Message | undefined;
+    threadList = messages.find((m) => m.content.includes("Active Threads:"));
+    if (!threadList) {
+      threadList = await threadListChannel.send("Active Threads:");
+    }
+    messages.filter((m) => m.id !== threadList?.id).forEach((m) => m.delete());
+    const threads = client.channels.cache.filter(
+      (channel) => channel.isThread() && channel.parent?.parent == c,
+    );
+    const formatThreads = await Promise.all(
+      threads.map(
+        async (t) =>
+          `${t} ${(await (t as ThreadChannel).messages.fetch()).last()
+            ?.createdAt}`,
+      ),
+    );
+    threadList?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
+  });
+  console.log(
+    `Logged in to ${client.guilds.cache.last()?.name} as ${client.user
+      ?.username}`,
+  );
   process.stdout.write("\x07"); // system bell (lets me know when hot reload is finished)
 });
 
