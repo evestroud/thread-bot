@@ -15,6 +15,8 @@ import {
 } from "discord.js";
 import { configDotenv } from "dotenv";
 
+const THREAD_CUTOFF_TIME = 7;
+
 configDotenv();
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
@@ -129,12 +131,19 @@ const updateThreadList = async (category: CategoryChannel) => {
       return { timestamp, thread };
     }),
   );
-  const sortedThreads = timestamps.sort(
-    (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
-  );
+  const now = new Date();
+  const sortedThreads = timestamps
+    // filter threads not updated in the past week
+    .filter(
+      ({ timestamp }) =>
+        now.getDate() - timestamp.getDate() < THREAD_CUTOFF_TIME,
+    )
+    // sort by most recent
+    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   const formatThreads = await Promise.all(
     sortedThreads.map(
-      async ({ thread, timestamp }) => `${thread} ${timestamp}`,
+      async ({ thread, timestamp }) =>
+        `${thread} - last: ${timestamp.toLocaleString()}`,
     ),
   );
   threadList?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
