@@ -52,46 +52,19 @@ for (const file of commandFiles) {
   }
 }
 
-client.once(Events.ClientReady, async (c) => {
-  const channels = c.channels.cache.values();
-  const categories = Array.from(channels).filter(
-    (c) => c.type === ChannelType.GuildCategory,
-  ) as CategoryChannel[];
-  categories.forEach(async (c) => {
-    if (c.name == "Voice Channels") return;
-    let threadListChannel;
-    threadListChannel = c.children.cache.find(
-      (c) => c.name === "thread-list",
-    ) as TextChannel;
-    if (!threadListChannel) {
-      threadListChannel = (await c.children.create({
-        name: "thread-list",
-      })) as TextChannel;
-    }
-    const messages = await threadListChannel.messages.fetch();
-    let threadList: Message | undefined;
-    threadList = messages.find((m) => m.content.includes("Active Threads:"));
-    if (!threadList) {
-      threadList = await threadListChannel.send("Active Threads:");
-    }
-    messages.filter((m) => m.id !== threadList?.id).forEach((m) => m.delete());
-    const threads = client.channels.cache.filter(
-      (channel) => channel.isThread() && channel.parent?.parent == c,
-    );
-    const formatThreads = await Promise.all(
-      threads.map(
-        async (t) =>
-          `${t} ${(await (t as ThreadChannel).messages.fetch()).last()
-            ?.createdAt}`,
-      ),
-    );
-    threadList?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
-  });
+client.once(Events.ClientReady, async (client) => {
+  updateThreadLists(client);
   console.log(
     `Logged in to ${client.guilds.cache.last()?.name} as ${client.user
       ?.username}`,
   );
   process.stdout.write("\x07"); // system bell (lets me know when hot reload is finished)
+});
+
+client.on(Events.MessageCreate, async (m) => {
+  if (!m.channel.isThread()) return;
+  console.log("Updating threads...");
+  await updateThreadLists(client);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {
@@ -123,3 +96,40 @@ client.on(Events.InteractionCreate, async (interaction) => {
 });
 
 client.login(DISCORD_TOKEN);
+
+const updateThreadLists = async (client: Client<true>) => {
+  const channels = client.channels.cache.values();
+  const categories = Array.from(channels).filter(
+    (c) => c.type === ChannelType.GuildCategory,
+  ) as CategoryChannel[];
+  categories.forEach(async (c) => {
+    if (c.name == "Voice Channels") return;
+    let threadListChannel;
+    threadListChannel = c.children.cache.find(
+      (c) => c.name === "thread-list",
+    ) as TextChannel;
+    if (!threadListChannel) {
+      threadListChannel = (await c.children.create({
+        name: "thread-list",
+      })) as TextChannel;
+    }
+    const messages = await threadListChannel.messages.fetch();
+    let threadList: Message | undefined;
+    threadList = messages.find((m) => m.content.includes("Active Threads:"));
+    if (!threadList) {
+      threadList = await threadListChannel.send("Active Threads:");
+    }
+    messages.filter((m) => m.id !== threadList?.id).forEach((m) => m.delete());
+    const threads = client.channels.cache.filter(
+      (channel) => channel.isThread() && channel.parent?.parent == c,
+    );
+    const formatThreads = await Promise.all(
+      threads.map(
+        async (t) =>
+          `${t} ${(await (t as ThreadChannel).messages.fetch()).first()
+            ?.createdAt}`,
+      ),
+    );
+    threadList?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
+  });
+};
