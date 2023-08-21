@@ -120,11 +120,21 @@ const updateThreadList = async (category: CategoryChannel) => {
   const threads = client.channels.cache.filter(
     (channel) => channel.isThread() && channel.parent?.parent == category,
   );
+  const timestamps = await Promise.all(
+    threads.map(async (thread) => {
+      const timestamp = (
+        await (thread as ThreadChannel).messages.fetch({ limit: 1 })
+      ).first()?.createdAt;
+      if (!timestamp) throw new Error("Message has no timestamp");
+      return { timestamp, thread };
+    }),
+  );
+  const sortedThreads = timestamps.sort(
+    (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
+  );
   const formatThreads = await Promise.all(
-    threads.map(
-      async (t) =>
-        `${t} ${(await (t as ThreadChannel).messages.fetch()).first()
-          ?.createdAt}`,
+    sortedThreads.map(
+      async ({ thread, timestamp }) => `${thread} ${timestamp}`,
     ),
   );
   threadList?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
