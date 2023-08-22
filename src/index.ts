@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import {
   CategoryChannel,
+  Channel,
   ChannelType,
   Client,
   Collection,
@@ -134,12 +135,18 @@ const updateThreadList = async (category: CategoryChannel) => {
       const timestamp = (
         await (thread as ThreadChannel).messages.fetch({ limit: 1 })
       ).first()?.createdAt;
-      if (!timestamp) throw new Error("Message has no timestamp");
       return { timestamp, thread };
     }),
   );
   const now = new Date();
   const sortedThreads = timestamps
+    // type guard ensuring all messages have a timestamp
+    .filter(
+      (
+        threadWithTimestamp,
+      ): threadWithTimestamp is { thread: Channel; timestamp: Date } =>
+        threadWithTimestamp.timestamp instanceof Date,
+    )
     // filter threads not updated in the past week
     .filter(
       ({ timestamp }) =>
