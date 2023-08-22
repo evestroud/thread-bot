@@ -15,15 +15,10 @@ import {
 } from "discord.js";
 import { configDotenv } from "dotenv";
 
-const THREAD_CUTOFF_TIME = 7;
-
 configDotenv();
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 
-interface Command {
-  data: SlashCommandBuilder;
-  execute: (interaction: Interaction) => Promise<void>;
-}
+/* Initialize client */
 
 const client = new Client({
   intents: [
@@ -32,8 +27,15 @@ const client = new Client({
     GatewayIntentBits.GuildIntegrations,
   ],
 });
-const commands = new Collection<string, Command>();
 
+/* Initialize slash commands */
+
+interface Command {
+  data: SlashCommandBuilder;
+  execute: (interaction: Interaction) => Promise<void>;
+}
+
+const commands = new Collection<string, Command>();
 const commandsPath = path.join(__dirname, "commands");
 const commandsExtension = __filename.slice(-3);
 const commandFiles = fs
@@ -53,16 +55,18 @@ for (const file of commandFiles) {
   }
 }
 
+/* Add event listeners */
+
 client.once(Events.ClientReady, async (client) => {
   const categories = Array.from(client.channels.cache.values()).filter(
     (c) => c.type === ChannelType.GuildCategory,
   ) as CategoryChannel[];
   categories.forEach((category) => updateThreadList(category));
   console.log(
-    `Logged in to ${client.guilds.cache.last()?.name} as ${client.user
-      ?.username}`,
+    `${new Date().toLocaleString()} Logged in to ${client.guilds.cache.last()
+      ?.name} as ${client.user?.username}`,
   );
-  process.stdout.write("\x07"); // system bell (lets me know when hot reload is finished)
+  process.stdout.write("\x07"); // system bell (helpful when hot reloading)
 });
 
 client.on(Events.MessageCreate, async (message) => {
@@ -99,7 +103,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
   }
 });
 
-client.login(DISCORD_TOKEN);
+/* Thread list management */
+
+// TODO Allow customizing this programatically?
+const THREAD_CUTOFF_TIME = 7;
 
 const updateThreadList = async (category: CategoryChannel) => {
   if (category.name == "Voice Channels") return;
@@ -149,3 +156,5 @@ const updateThreadList = async (category: CategoryChannel) => {
   threadList?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
   console.log(`Updated thread list for ${category}`);
 };
+
+client.login(DISCORD_TOKEN);
