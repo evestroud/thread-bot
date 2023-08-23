@@ -118,6 +118,10 @@ const updateThreadList = async (category: CategoryChannel) => {
   if (!threadListChannel) {
     threadListChannel = (await category.children.create({
       name: "thread-list",
+      permissionOverwrites: [
+        { id: category.guild.roles.everyone, deny: ["SendMessages"] },
+        { id: category.client.user.id, allow: ["SendMessages"] },
+      ],
     })) as TextChannel;
   }
   const messages = await threadListChannel.messages.fetch();
