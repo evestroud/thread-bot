@@ -58,13 +58,13 @@ for (const file of commandFiles) {
 
 /* Add event listeners */
 
-client.once(Events.ClientReady, async (client) => {
+client.once(Events.ClientReady, async () => {
   const categories = Array.from(client.channels.cache.values()).filter(
     (c) => c.type === ChannelType.GuildCategory,
   ) as CategoryChannel[];
   categories.forEach((category) => updateThreadList(category));
   console.log(
-    `${new Date().toLocaleString()} Logged in to ${client.guilds.cache.last()
+    `${new Date().toISOString()} Logged in to ${client.guilds.cache.last()
       ?.name} as ${client.user?.username}`,
   );
   process.stdout.write("\x07"); // system bell (helpful when hot reloading)
