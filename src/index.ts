@@ -112,19 +112,7 @@ const IGNORED_CATEGORIES = ["Voice Channels"];
 
 const updateThreadList = async (category: CategoryChannel) => {
   if (IGNORED_CATEGORIES.includes(category.name)) return;
-  let threadListChannel;
-  threadListChannel = category.children.cache.find(
-    (c) => c.name === "thread-list",
-  ) as TextChannel;
-  if (!threadListChannel) {
-    threadListChannel = (await category.children.create({
-      name: "thread-list",
-      permissionOverwrites: [
-        { id: category.guild.roles.everyone, deny: ["SendMessages"] },
-        { id: category.client.user.id, allow: ["SendMessages"] },
-      ],
-    })) as TextChannel;
-  }
+  let threadListChannel = await getOrCreateThreadListChannel(category);
   const messages = await threadListChannel.messages.fetch();
   let threadList: Message | undefined;
   threadList = messages.find(
@@ -180,5 +168,28 @@ const updateThreadList = async (category: CategoryChannel) => {
   threadList?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
   console.log(`Updated thread list for ${category}`);
 };
+
+const getOrCreateThreadListChannel = async (
+  category: CategoryChannel,
+): Promise<TextChannel> => {
+  let threadListChannel = category.children.cache.find(
+    (c) => c.name === "thread-list",
+  );
+  // Should this automatically edit or delete any channels that match the name
+  // but aren't set up properly?
+  if (!isTextChannel(threadListChannel)) {
+    threadListChannel = await category.children.create({
+      name: "thread-list",
+      permissionOverwrites: [
+        { id: category.guild.roles.everyone, deny: ["SendMessages"] },
+        { id: category.client.user.id, allow: ["SendMessages"] },
+      ],
+    });
+  }
+  return threadListChannel;
+};
+
+const isTextChannel = (channel: any): channel is TextChannel =>
+  channel instanceof TextChannel;
 
 client.login(DISCORD_TOKEN);
