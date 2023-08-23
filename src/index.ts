@@ -131,7 +131,17 @@ const updateThreadList = async (category: CategoryChannel) => {
   if (!threadList) {
     threadList = await threadListChannel.send("Active Threads:");
   }
-  messages.filter((m) => m.id !== threadList?.id).forEach((m) => m.delete());
+  messages
+    .filter((m) => m.id !== threadList?.id)
+    .forEach(async (m) => {
+      try {
+        await m.delete();
+      } catch (e) {
+        console.warn(
+          `Attempted to delete message '${m}' from channel but encountered ${e}`,
+        );
+      }
+    });
   const threads = client.channels.cache.filter(
     (channel) => channel.isThread() && channel.parent?.parent == category,
   );
