@@ -127,7 +127,9 @@ const updateThreadList = async (category: CategoryChannel) => {
   }
   const messages = await threadListChannel.messages.fetch();
   let threadList: Message | undefined;
-  threadList = messages.find((m) => m.content.includes("Active Threads:"));
+  threadList = messages.find(
+    (m) => client.user?.id && m.author.id === client.user.id,
+  );
   if (!threadList) {
     threadList = await threadListChannel.send("Active Threads:");
   }
