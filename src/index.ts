@@ -114,24 +114,10 @@ const updateThreadList = async (category: CategoryChannel) => {
   if (IGNORED_CATEGORIES.includes(category.name)) return;
   let threadListChannel = await getOrCreateThreadListChannel(category);
   const messages = await threadListChannel.messages.fetch();
-  let threadList: Message | undefined;
-  threadList = messages.find(
-    (m) => client.user?.id && m.author.id === client.user.id,
+  let threadListMessage: Message = await getOrCreateThreadListMessage(
+    messages,
+    threadListChannel,
   );
-  if (!threadList) {
-    threadList = await threadListChannel.send("Active Threads:");
-  }
-  messages
-    .filter((m) => m.id !== threadList?.id)
-    .forEach(async (m) => {
-      try {
-        await m.delete();
-      } catch (e) {
-        console.warn(
-          `Attempted to delete message '${m}' from channel but encountered ${e}`,
-        );
-      }
-    });
   const threads = client.channels.cache.filter(
     (channel) => channel.isThread() && channel.parent?.parent == category,
   );
@@ -165,7 +151,7 @@ const updateThreadList = async (category: CategoryChannel) => {
         `${thread} - last: ${timestamp.toLocaleString()}`,
     ),
   );
-  threadList?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
+  threadListMessage?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
   console.log(`Updated thread list for ${category}`);
 };
 
@@ -191,5 +177,26 @@ const getOrCreateThreadListChannel = async (
 
 const isTextChannel = (channel: any): channel is TextChannel =>
   channel instanceof TextChannel;
+
+const getOrCreateThreadListMessage = async (
+  messages: Collection<string, Message<true>>,
+  threadListChannel: TextChannel,
+): Promise<Message<boolean>> => {
+  const threadListMessage =
+    messages.find((m) => client.user?.id && m.author.id === client.user.id) ||
+    (await threadListChannel.send("Active Threads:"));
+  messages
+    .filter((m) => m.id !== threadListMessage?.id)
+    .forEach(async (m) => {
+      try {
+        await m.delete();
+      } catch (e) {
+        console.warn(
+          `Attempted to delete message '${m}' from channel but encountered ${e}`,
+        );
+      }
+    });
+  return threadListMessage as Message;
+};
 
 client.login(DISCORD_TOKEN);
