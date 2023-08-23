@@ -108,9 +108,10 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 // TODO Allow customizing this programatically?
 const THREAD_CUTOFF_TIME = 7;
+const IGNORED_CATEGORIES = ["Voice Channels"];
 
 const updateThreadList = async (category: CategoryChannel) => {
-  if (category.name == "Voice Channels") return;
+  if (IGNORED_CATEGORIES.includes(category.name)) return;
   let threadListChannel;
   threadListChannel = category.children.cache.find(
     (c) => c.name === "thread-list",
