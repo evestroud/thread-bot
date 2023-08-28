@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import {
+  AnyThreadChannel,
   CategoryChannel,
-  Channel,
   ChannelType,
   Client,
   Collection,
@@ -12,7 +12,6 @@ import {
   Message,
   SlashCommandBuilder,
   TextChannel,
-  ThreadChannel,
 } from "discord.js";
 import { configDotenv } from "dotenv";
 
@@ -106,8 +105,6 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
 /* Thread list management */
 
-// TODO Allow customizing this programatically?
-const THREAD_CUTOFF_TIME = 7;
 const IGNORED_CATEGORIES = ["Voice Channels"];
 
 const updateThreadList = async (category: CategoryChannel) => {
@@ -118,42 +115,37 @@ const updateThreadList = async (category: CategoryChannel) => {
     messages,
     threadListChannel,
   );
-  const threads = client.channels.cache.filter(
-    (channel) => channel.isThread() && channel.parent?.parent == category,
-  );
-  const timestamps = await Promise.all(
-    threads.map(async (thread) => {
-      const timestamp = (
-        await (thread as ThreadChannel).messages.fetch({ limit: 1 })
-      ).first()?.createdAt;
-      return { timestamp, thread };
-    }),
-  );
-  const now = new Date();
-  const sortedThreads = timestamps
-    // type guard ensuring all messages have a timestamp
-    .filter(
-      (
-        threadWithTimestamp,
-      ): threadWithTimestamp is { thread: Channel; timestamp: Date } =>
-        threadWithTimestamp.timestamp instanceof Date,
-    )
-    // filter threads not updated in the past week
-    .filter(
-      ({ timestamp }) =>
-        now.getDate() - timestamp.getDate() < THREAD_CUTOFF_TIME,
-    )
-    // sort by most recent
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
-  const formatThreads = await Promise.all(
-    sortedThreads.map(
-      async ({ thread, timestamp }) =>
-        `${thread} - last: ${timestamp.toLocaleString()}`,
-    ),
+  const threadsWithTimestamps = await getThreadsWithTimestamps(category);
+  const formatThreads = threadsWithTimestamps.map(
+    (thread) =>
+      `${thread} - last: ${thread.mostRecentTimestamp.toLocaleString()}`,
   );
   threadListMessage?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
   console.log(`Updated thread list for ${category}`);
 };
+
+const getThreadsWithTimestamps = async (category: CategoryChannel) =>
+  (
+    await Promise.all(
+      client.channels.cache
+        .filter((channel): channel is AnyThreadChannel => channel.isThread())
+        .filter((thread) => thread.parent?.parent === category)
+        .map(async (threadInCategory) => {
+          const mostRecentTimestamp = (
+            await threadInCategory.messages.fetch({ limit: 1 })
+          ).first()?.createdAt;
+          return Object.assign(threadInCategory, { mostRecentTimestamp });
+        }),
+    )
+  )
+    .filter(
+      (thread): thread is AnyThreadChannel & { mostRecentTimestamp: Date } =>
+        thread.mostRecentTimestamp instanceof Date,
+    )
+    .sort(
+      (a, b) =>
+        b.mostRecentTimestamp.getTime() - a.mostRecentTimestamp.getTime(),
+    );
 
 const getOrCreateThreadListChannel = async (
   category: CategoryChannel,
@@ -196,7 +188,7 @@ const getOrCreateThreadListMessage = async (
         );
       }
     });
-  return threadListMessage as Message;
+  return threadListMessage;
 };
 
 client.login(DISCORD_TOKEN);
