@@ -144,6 +144,19 @@ const updateThreadList = async (category: CategoryChannel) => {
           .join("\n")}` || "None",
     }),
   );
+  const olderThreads = threadsWithTimestamps.filter(
+    (thread) => thread.mostRecentTimestamp < past.month,
+  );
+  formatThreadsByTime.push({
+    name: "Older threads:",
+    value:
+      olderThreads
+        .map(
+          (thread) =>
+            `\t${thread} - last: ${thread.mostRecentTimestamp.toLocaleString()}`,
+        )
+        .join("\n") || "None",
+  });
   console.log(formatThreadsByTime);
   const threadListEmbed = new EmbedBuilder()
     .setTitle("Recently Active Threads")
