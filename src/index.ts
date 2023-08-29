@@ -6,6 +6,7 @@ import {
   ChannelType,
   Client,
   Collection,
+  EmbedBuilder,
   Events,
   GatewayIntentBits,
   Interaction,
@@ -14,6 +15,7 @@ import {
   TextChannel,
 } from "discord.js";
 import { configDotenv } from "dotenv";
+import moment from "moment";
 
 configDotenv();
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
@@ -109,15 +111,50 @@ const IGNORED_CATEGORIES = ["Voice Channels"];
 
 const updateThreadList = async (category: CategoryChannel) => {
   if (IGNORED_CATEGORIES.includes(category.name)) return;
+  const threadsWithTimestamps = await getThreadsWithTimestamps(category);
+  const past = {
+    day: moment().subtract(1, "day").toDate(),
+    week: moment().subtract(1, "week").toDate(),
+    month: moment().subtract(1, "month").toDate(),
+  };
+  const threadsInPast = {
+    day: threadsWithTimestamps.filter(
+      (thread) => thread.mostRecentTimestamp > past.day,
+    ),
+    week: threadsWithTimestamps.filter(
+      (thread) =>
+        thread.mostRecentTimestamp > past.week &&
+        thread.mostRecentTimestamp <= past.day,
+    ),
+    month: threadsWithTimestamps.filter(
+      (thread) =>
+        thread.mostRecentTimestamp > past.month &&
+        thread.mostRecentTimestamp <= past.week,
+    ),
+  };
+  const formatThreadsByTime = Object.entries(threadsInPast).map(
+    ([timeUnit, threads]) => ({
+      name: `Threads active in past ${timeUnit}:`,
+      value:
+        `${threads
+          .map(
+            (thread) =>
+              `\t${thread} - last: ${thread.mostRecentTimestamp.toLocaleString()}`,
+          )
+          .join("\n")}` || "None",
+    }),
+  );
+  console.log(formatThreadsByTime);
+  const threadListEmbed = new EmbedBuilder()
+    .setTitle("Recently Active Threads")
+    .setFields(formatThreadsByTime)
+    .setTimestamp(new Date());
+
   let threadListChannel = await getOrCreateThreadListChannel(category);
   let threadListMessage: Message =
     await getOrCreateThreadListMessage(threadListChannel);
-  const threadsWithTimestamps = await getThreadsWithTimestamps(category);
-  const formatThreads = threadsWithTimestamps.map(
-    (thread) =>
-      `${thread} - last: ${thread.mostRecentTimestamp.toLocaleString()}`,
-  );
-  threadListMessage?.edit(`Active Threads:\n${formatThreads.join("\n")}`);
+
+  threadListMessage?.edit({ embeds: [threadListEmbed], content: "" });
   console.log(`Updated thread list for ${category}`);
 };
 
