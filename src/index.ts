@@ -110,11 +110,8 @@ const IGNORED_CATEGORIES = ["Voice Channels"];
 const updateThreadList = async (category: CategoryChannel) => {
   if (IGNORED_CATEGORIES.includes(category.name)) return;
   let threadListChannel = await getOrCreateThreadListChannel(category);
-  const messages = await threadListChannel.messages.fetch();
-  let threadListMessage: Message = await getOrCreateThreadListMessage(
-    messages,
-    threadListChannel,
-  );
+  let threadListMessage: Message =
+    await getOrCreateThreadListMessage(threadListChannel);
   const threadsWithTimestamps = await getThreadsWithTimestamps(category);
   const formatThreads = threadsWithTimestamps.map(
     (thread) =>
@@ -171,9 +168,9 @@ const isTextChannel = (channel: any): channel is TextChannel =>
   channel instanceof TextChannel;
 
 const getOrCreateThreadListMessage = async (
-  messages: Collection<string, Message<true>>,
   threadListChannel: TextChannel,
 ): Promise<Message<boolean>> => {
+  const messages = await threadListChannel.messages.fetch();
   const threadListMessage =
     messages.find((m) => client.user?.id && m.author.id === client.user.id) ||
     (await threadListChannel.send("Active Threads:"));
