@@ -51,7 +51,7 @@ for (const file of commandFiles) {
   if ("data" in command && "execute" in command) {
     commands.set(command.data.name, command);
   } else {
-    console.log(
+    console.warn(
       `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
     );
   }
@@ -157,7 +157,6 @@ const updateThreadList = async (category: CategoryChannel) => {
         )
         .join("\n") || "None",
   });
-  console.log(formatThreadsByTime);
   const threadListEmbed = new EmbedBuilder()
     .setTitle("Recently Active Threads")
     .setFields(formatThreadsByTime)
