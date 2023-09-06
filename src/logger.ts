@@ -14,8 +14,8 @@ export enum LogLevel {
 
 export function logger({ message, server, level }: LoggerOptions): void {
   console.log(
-    `[${level}] ${new Date().toISOString()} - ${
-      server ? `${server.name} (${server.id})` : ""
+    `[${level}] ${new Date().toISOString()}${
+      server ? ` - ${server.name} (${server.id})` : ""
     }: ${message}`,
   );
 }

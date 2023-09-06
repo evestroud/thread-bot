@@ -184,7 +184,7 @@ const updateThreadList = async (category: CategoryChannel) => {
 
   threadListMessage?.edit({ embeds: [threadListEmbed], content: "" });
   logger({
-    message: `Updated thread list for ${category}`,
+    message: `Updated thread list for ${category.name} (${category.id})`,
     server: client.guilds.cache.last(),
     level: LogLevel.LOG,
   });
