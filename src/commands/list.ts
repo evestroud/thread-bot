@@ -8,7 +8,6 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     channel.isThread(),
   );
   interaction.reply(threads.toJSON().toString() || "No threads found");
-  console.log("/list");
 };
 
 export { data, execute };

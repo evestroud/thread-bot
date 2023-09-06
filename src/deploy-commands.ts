@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { REST, Routes } from "discord.js";
 import { configDotenv } from "dotenv";
+import { LogLevel, logger } from "./logger";
 
 configDotenv();
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
@@ -22,9 +23,10 @@ for (const file of commandFiles) {
   if ("data" in command && "execute" in command) {
     commands.push(command.data.toJSON());
   } else {
-    console.log(
-      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`
-    );
+    logger({
+      message: `The command at ${filePath} is missing a required "data" or "execute" property.`,
+      level: LogLevel.WARN,
+    });
   }
 }
 
@@ -34,23 +36,28 @@ const rest = new REST().setToken(DISCORD_TOKEN || "");
 // and deploy your commands!
 (async () => {
   try {
-    console.log(
-      `Started refreshing ${commands.length} application (/) commands.`
-    );
+    logger({
+      message: `Started refreshing ${commands.length} application (/) commands.`,
+      level: LogLevel.LOG,
+    });
 
     // The put method is used to fully refresh all commands in the guild with the current set
     const data = await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID || "", GUILD_ID || ""),
-      { body: commands }
+      { body: commands },
     );
 
-    console.log(
-      `Successfully reloaded ${
+    logger({
+      message: `Successfully reloaded ${
         (data as any[]).length
-      } application (/) commands.`
-    );
+      } application (/) commands.`,
+      level: LogLevel.LOG,
+    });
   } catch (error) {
     // And of course, make sure you catch and log any errors!
-    console.error(error);
+    logger({
+      message: `Error deploying commands: ${error}`,
+      level: LogLevel.ERROR,
+    });
   }
 })();

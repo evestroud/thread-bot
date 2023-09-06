@@ -16,6 +16,7 @@ import {
 } from "discord.js";
 import { configDotenv } from "dotenv";
 import moment from "moment";
+import { LogLevel, logger } from "./logger";
 
 configDotenv();
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
@@ -51,23 +52,25 @@ for (const file of commandFiles) {
   if ("data" in command && "execute" in command) {
     commands.set(command.data.name, command);
   } else {
-    console.warn(
-      `[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`,
-    );
+    logger({
+      message: `The command at ${filePath} is missing a required "data" or "execute" property.`,
+      level: LogLevel.WARN,
+    });
   }
 }
 
 /* Add event listeners */
 
-client.once(Events.ClientReady, async () => {
+client.once(Events.ClientReady, async (client) => {
   const categories = Array.from(client.channels.cache.values()).filter(
     (c) => c.type === ChannelType.GuildCategory,
   ) as CategoryChannel[];
   categories.forEach((category) => updateThreadList(category));
-  console.log(
-    `${new Date().toISOString()} Logged in to ${client.guilds.cache.last()
-      ?.name} as ${client.user?.username}`,
-  );
+  logger({
+    message: `Logged in as ${client.user.username}`,
+    server: client.guilds.cache.last(),
+    level: LogLevel.LOG,
+  });
   process.stdout.write("\x07"); // system bell (helpful when hot reloading)
 });
 
@@ -83,14 +86,27 @@ client.on(Events.InteractionCreate, async (interaction) => {
   const command = commands.get(interaction.commandName);
 
   if (!command) {
-    console.error(`No command matching ${interaction.commandName} was found.`);
+    logger({
+      message: `No command matching ${interaction.commandName} was found.`,
+      server: interaction.guild,
+      level: LogLevel.ERROR,
+    });
     return;
   }
 
   try {
     await command.execute(interaction);
+    logger({
+      message: `${interaction.user.username} used ${interaction.commandName}`,
+      server: client.guilds.cache.last(),
+      level: LogLevel.LOG,
+    });
   } catch (error) {
-    console.error(error);
+    logger({
+      message: `Error executing ${interaction.commandName}: ${error}`,
+      server: interaction.guild,
+      level: LogLevel.ERROR,
+    });
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({
         content: "There was an error while executing this command!",
@@ -167,7 +183,11 @@ const updateThreadList = async (category: CategoryChannel) => {
     await getOrCreateThreadListMessage(threadListChannel);
 
   threadListMessage?.edit({ embeds: [threadListEmbed], content: "" });
-  console.log(`Updated thread list for ${category}`);
+  logger({
+    message: `Updated thread list for ${category}`,
+    server: client.guilds.cache.last(),
+    level: LogLevel.LOG,
+  });
 };
 
 const getThreadsWithTimestamps = async (category: CategoryChannel) =>
@@ -229,9 +249,11 @@ const getOrCreateThreadListMessage = async (
       try {
         await m.delete();
       } catch (e) {
-        console.warn(
-          `Attempted to delete message '${m}' from channel but encountered ${e}`,
-        );
+        logger({
+          message: `Attempted to delete message '${m}' from channel but encountered ${e}`,
+          server: client.guilds.cache.last(),
+          level: LogLevel.WARN,
+        });
       }
     });
   return threadListMessage;
