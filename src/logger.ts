@@ -29,6 +29,7 @@ export function replyAndLog(
       options.message instanceof Error
         ? `Error: ${options.message.name}: ${options.message.message}`
         : options.message,
+    ephemeral: true,
   });
   logger(options);
 }
