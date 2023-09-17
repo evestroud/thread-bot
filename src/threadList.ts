@@ -7,7 +7,25 @@ import {
   TextChannel,
 } from "discord.js";
 import moment from "moment";
+import { STRING, Sequelize, TIME } from "sequelize";
 import { LogLevel, logger } from "./logger";
+
+/* Database setup */
+
+const db = new Sequelize("database", "name", "password", {
+  host: "localhost",
+  dialect: "sqlite",
+  logging: false,
+  storage: "database.sqlite",
+});
+
+const TrackedThreads = db.define("thread", {
+  id: { type: STRING, unique: true, primaryKey: true },
+  authorId: { type: STRING },
+  lastPost: { type: TIME },
+  server: { type: STRING },
+  category: { type: STRING },
+});
 
 /* Thread list management */
 
@@ -156,4 +174,4 @@ const getOrCreateThreadListMessage = async (
   return threadListMessage;
 };
 
-export default updateThreadList;
+export { TrackedThreads, updateThreadList };
