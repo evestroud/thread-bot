@@ -7,7 +7,9 @@
     "start": "ts-node src/index.ts",
     "deploy": "tsc && node dist/deploy-commands.js",
     "deploy:dev": "ts-node src/deploy-commands.ts",
-    "dev": "nodemon"
+    "dev": "nodemon",
+    "sync": "node dist/sync.js",
+    "sync:dev": "ts-node src/sync.ts"
   },
   "repository": "git@github.com:evestroud/thread-bot.git",
   "author": "Eve Stroud <evestroud89@gmail.com>",
