@@ -63,7 +63,7 @@ client.once(Events.ClientReady, async (client) => {
   ) as CategoryChannel[];
   categories.forEach((category) => updateThreadList(client, category));
   logger({
-    message: `Logged in as ${client.user.username}`,
+    message: `Logged in as ${client.user.username}<@${client.user.id}>`,
     server: client.guilds.cache.last(),
     level: LogLevel.LOG,
   });
@@ -93,7 +93,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     await command.execute(interaction);
     logger({
-      message: `${interaction.user.username} used ${interaction.commandName}`,
+      message: `${interaction.user.username}<@${interaction.user.id}}> used ${interaction.commandName}`,
       server: client.guilds.cache.last(),
       level: LogLevel.LOG,
     });
