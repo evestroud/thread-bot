@@ -36,6 +36,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
     server: interaction.guild,
     level: LogLevel.LOG,
   });
+  // TODO update the thread list after using this command
 };
 
 export { data, execute };

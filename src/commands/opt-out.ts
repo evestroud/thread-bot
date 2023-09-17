@@ -25,6 +25,7 @@ const execute = async (interaction: ChatInputCommandInteraction) => {
       level: LogLevel.LOG,
       server: interaction.guild,
     });
+    // TODO update the thread list after using this command
   } else {
     replyAndLog(interaction, {
       message: "This thread is not being tracked",
