@@ -12,7 +12,7 @@ import {
 } from "discord.js";
 import { configDotenv } from "dotenv";
 import { LogLevel, logger } from "./logger";
-import updateThreadList from "./threadList";
+import { updateThreadList, TrackedThreads } from "./threadList";
 
 configDotenv();
 const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
@@ -58,22 +58,28 @@ for (const file of commandFiles) {
 /* Add event listeners */
 
 client.once(Events.ClientReady, async (client) => {
-  const categories = Array.from(client.channels.cache.values()).filter(
-    (c) => c.type === ChannelType.GuildCategory,
-  ) as CategoryChannel[];
-  categories.forEach((category) => updateThreadList(client, category));
-  logger({
-    message: `Logged in as ${client.user.username}<@${client.user.id}>`,
-    server: client.guilds.cache.last(),
-    level: LogLevel.LOG,
+  const servers = Array.from(client.guilds.cache.values());
+  servers.forEach((server) => {
+    const categories = Array.from(client.channels.cache.values()).filter(
+      (c) => c.type === ChannelType.GuildCategory,
+    ) as CategoryChannel[];
+    categories.forEach((category) =>
+      updateThreadList(client, server, category),
+    );
+    logger({
+      message: `Logged in as ${client.user.username}<@${client.user.id}>`,
+      server,
+      level: LogLevel.LOG,
+    });
   });
   process.stdout.write("\x07"); // system bell (helpful when hot reloading)
 });
 
 client.on(Events.MessageCreate, async (message) => {
-  if (!message.channel.isThread()) return;
+  if (!message.guild || !message.channel.isThread()) return;
   const category = message.channel.parent?.parent;
-  if (category) await updateThreadList(client, category);
+  const server = message.guild;
+  if (category) await updateThreadList(client, server, category);
 });
 
 client.on(Events.InteractionCreate, async (interaction) => {

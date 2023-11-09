@@ -3,6 +3,7 @@ import {
   CategoryChannel,
   Client,
   EmbedBuilder,
+  Guild,
   Message,
   TextChannel,
 } from "discord.js";
@@ -29,12 +30,17 @@ const TrackedThreads = db.define("thread", {
 
 /* Thread list management */
 
-const IGNORED_CATEGORIES = ["Voice Channels"];
+// const IGNORED_CATEGORIES = ["Voice Channels"];
 
-const updateThreadList = async (client: Client, category: CategoryChannel) => {
-  if (IGNORED_CATEGORIES.includes(category.name)) return;
+const updateThreadList = async (
+  client: Client,
+  server: Guild,
+  category: CategoryChannel,
+) => {
+  // if (IGNORED_CATEGORIES.includes(category.name)) return;
   const threadsWithTimestamps = await getThreadsWithTimestamps(
     client,
+    server,
     category,
   );
   const past = {
@@ -103,9 +109,14 @@ const updateThreadList = async (client: Client, category: CategoryChannel) => {
 
 const getThreadsWithTimestamps = async (
   client: Client,
+  server: Guild,
   category: CategoryChannel,
-) =>
-  (
+) => {
+  const threads = await TrackedThreads.findAll({
+    where: { server: server.id, category: category.id },
+  });
+  console.log(threads);
+  return (
     await Promise.all(
       client.channels.cache
         .filter((channel): channel is AnyThreadChannel => channel.isThread())
@@ -126,6 +137,7 @@ const getThreadsWithTimestamps = async (
       (a, b) =>
         b.mostRecentTimestamp.getTime() - a.mostRecentTimestamp.getTime(),
     );
+};
 
 const getOrCreateThreadListChannel = async (
   category: CategoryChannel,
